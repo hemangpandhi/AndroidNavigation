@@ -41,17 +41,30 @@ The app is now configured to use the Android 12+ Splash Screen API to ensure the
    ```
 4. **Expected Result:** You will see a perfectly black screen (Cold Start), which instantly transitions directly into `RootFragment`. There should be absolutely no flicker of `SecondFragment`.
 
-### Test 2: Recents / Car Settings (State Preservation)
+### Test 2: Recents (State Preservation)
 1. Open the app and navigate to the **Second Fragment**.
 2. Press the **Home** button via ADB:
    ```bash
    adb shell input keyevent KEYCODE_HOME
    ```
-3. Simulate **Car Settings** or **Recents** opening the app. We do this by launching the Activity without the specific Launcher intent category:
+3. Simulate **Recents** opening the app. We do this by launching the Activity without the specific Launcher intent category:
    ```bash
    adb shell am start -n com.example.aaosnavapp/.MainActivity
    ```
 4. **Expected Result:** You will see a perfectly black screen, and the app will manually reconstruct your history, instantly dropping you back into `SecondFragment`.
+
+### Test 3: Car Settings (Referrer State Preservation)
+If Car Settings is sending the exact same Launcher Intent, we rely on the Android Referrer to intercept it.
+1. Open the app and navigate to the **Second Fragment**.
+2. Press the **Home** button via ADB:
+   ```bash
+   adb shell input keyevent KEYCODE_HOME
+   ```
+3. Simulate **Car Settings** opening the app by spoofing the referrer:
+   ```bash
+   adb shell am start -n com.example.aaosnavapp/.MainActivity -a android.intent.action.MAIN -c android.intent.category.LAUNCHER --es "android.intent.extra.REFERRER_NAME" "android-app://com.android.car.settings"
+   ```
+4. **Expected Result:** The app detects "settings" in the referrer package and restores your history, dropping you back into `SecondFragment`.
 
 ---
 
