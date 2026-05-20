@@ -15,7 +15,7 @@
         android:theme="@style/Theme.AAOSNavApp"
         tools:targetApi="31">
         <activity
-            android:name=".SplashActivity"
+            android:name=".MainActivity"
             android:exported="true"
             android:clearTaskOnLaunch="true"
             android:theme="@style/Theme.AAOSNavApp">
@@ -26,10 +26,9 @@
         </activity>
 
         <activity
-            android:name=".MainActivity"
-            android:exported="true"
-            android:launchMode="standard"
-            android:theme="@style/Theme.AAOSNavApp">
+            android:name=".ContentActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
         </activity>
     </application>
 
