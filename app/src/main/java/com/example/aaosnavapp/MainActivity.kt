@@ -26,15 +26,22 @@ class MainActivity : AppCompatActivity() {
         val isFromHistory = ((intent?.flags ?: 0) and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
 
         if (isLauncherLaunch && !isFromHistory) {
-            // Restart the activity completely to clear the back stack without a flicker
-            val restartIntent = Intent(this, MainActivity::class.java).apply {
-                action = Intent.ACTION_MAIN
-                addCategory(Intent.CATEGORY_LAUNCHER)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-            startActivity(restartIntent)
-            overridePendingTransition(0, 0)
-            finish()
+            // Synchronously reset the navigation graph without recreating the activity
+            val navHostFragment = supportFragmentManager
+                .findFragmentById(R.id.nav_host_fragment) as androidx.navigation.fragment.NavHostFragment
+            val navController = navHostFragment.navController
+            
+            val startDestinationId = navController.graph.startDestinationId
+            val options = androidx.navigation.NavOptions.Builder()
+                .setPopUpTo(startDestinationId, true)
+                .setEnterAnim(0)
+                .setExitAnim(0)
+                .setPopEnterAnim(0)
+                .setPopExitAnim(0)
+                .build()
+                
+            navController.navigate(startDestinationId, null, options)
+            supportFragmentManager.executePendingTransactions()
         }
     }
 }
