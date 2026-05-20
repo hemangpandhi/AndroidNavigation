@@ -2,6 +2,7 @@ package com.example.aaosnavapp
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.fragment.NavHostFragment
 
@@ -16,6 +17,27 @@ class MainActivity : AppCompatActivity() {
 
         super.onCreate(stateToRestore)
         setContentView(R.layout.activity_main)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // SNAPSHOT FORGERY: Before the OS takes a snapshot of the app going to the background,
+        // we forcefully display a Cover View that looks exactly like RootFragment.
+        // This guarantees that the OS snapshot slot contains a picture of RootFragment,
+        // so when the Car Launcher animates the app to the front, it is flawless.
+        findViewById<View>(R.id.snapshot_cover).visibility = View.VISIBLE
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Once the OS transition animation completes and the app is fully resumed,
+        // we instantly hide the forged RootFragment cover.
+        // If launched from Recents, the real SecondFragment underneath is revealed.
+        // If launched from Launcher, onNewIntent has already swapped the fragment underneath to RootFragment.
+        val cover = findViewById<View>(R.id.snapshot_cover)
+        cover.post {
+            cover.visibility = View.GONE
+        }
     }
 
     override fun onNewIntent(intent: Intent?) {
