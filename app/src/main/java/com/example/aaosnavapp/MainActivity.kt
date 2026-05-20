@@ -8,11 +8,16 @@ import androidx.navigation.fragment.NavHostFragment
 class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
+        val isLauncherLaunch = intent?.action == Intent.ACTION_MAIN &&
+                intent?.hasCategory(Intent.CATEGORY_LAUNCHER) == true
+        val isFromHistory = ((intent?.flags ?: 0) and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
+
+        // If it's a fresh launch from the launcher, ignore the saved state
+        // to prevent the previous fragments from being restored and causing a flicker.
+        val stateToRestore = if (isLauncherLaunch && !isFromHistory) null else savedInstanceState
+
+        super.onCreate(stateToRestore)
         setContentView(R.layout.activity_main)
-        
-        // Handle intent if launched directly
-        handleNavigationReset(intent)
     }
 
     override fun onNewIntent(intent: Intent?) {
