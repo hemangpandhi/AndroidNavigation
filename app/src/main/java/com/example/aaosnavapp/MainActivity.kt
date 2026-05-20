@@ -17,24 +17,33 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val isLauncherLaunch = intent?.action == Intent.ACTION_MAIN &&
+        val isMainAction = intent?.action == Intent.ACTION_MAIN &&
                 intent.hasCategory(Intent.CATEGORY_LAUNCHER)
         val isFromHistory = ((intent?.flags ?: 0) and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
 
-        val navHostFragment = supportFragmentManager
-            .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
-        val navController = navHostFragment.navController
+        // Attempt to identify who launched the app
+        val callerPackage = referrer?.host ?: ""
+        
+        // If the caller is Car Settings, we treat it as a resume, even if it uses the Launcher intent.
+        val isFromSettings = callerPackage.contains("settings", ignoreCase = true)
+        
+        // It is a pure Launcher launch ONLY if it's the main action, not from history, and not from settings.
+        val isLauncherLaunch = isMainAction && !isFromHistory && !isFromSettings
 
         val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
-        if (isLauncherLaunch && !isFromHistory) {
+        if (isLauncherLaunch) {
             // Fresh launch from Launcher. Clear any saved state so it defaults to RootFragment.
             prefs.edit().clear().apply()
         } else {
-            // Launched from Recents or another app (like Car Settings). Restore the backstack state.
+            // Launched from Recents, Settings, or another app. Restore the backstack state.
             val savedStateString = prefs.getString(STATE_KEY, null)
             if (savedStateString != null) {
                 try {
+                    val navHostFragment = supportFragmentManager
+                        .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+                    val navController = navHostFragment.navController
+                    
                     val bytes = Base64.decode(savedStateString, 0)
                     val parcel = Parcel.obtain()
                     parcel.unmarshall(bytes, 0, bytes.size)
