@@ -31,14 +31,26 @@ The app is now configured to use the Android 12+ Splash Screen API to ensure the
 
 ### Test 1: Car Launcher (Flicker-Free Reset)
 1. Open the app and navigate to the **Second Fragment**.
-2. Press the **Home** button on your AAOS emulator (this triggers `onUserLeaveHint` and kills the app, saving state).
-3. Tap the **App Icon** in the Car Launcher.
+2. Press the **Home** button to trigger `onUserLeaveHint` (kills the app and saves state). You can do this via ADB:
+   ```bash
+   adb shell input keyevent KEYCODE_HOME
+   ```
+3. Simulate the **Car Launcher** opening the app. This requires the explicit `MAIN` action and `LAUNCHER` category:
+   ```bash
+   adb shell am start -n com.example.aaosnavapp/.MainActivity -a android.intent.action.MAIN -c android.intent.category.LAUNCHER
+   ```
 4. **Expected Result:** You will see a perfectly black screen (Cold Start), which instantly transitions directly into `RootFragment`. There should be absolutely no flicker of `SecondFragment`.
 
 ### Test 2: Recents / Car Settings (State Preservation)
 1. Open the app and navigate to the **Second Fragment**.
-2. Press the **Home** button.
-3. Open your AAOS **Recents** menu and select the app.
+2. Press the **Home** button via ADB:
+   ```bash
+   adb shell input keyevent KEYCODE_HOME
+   ```
+3. Simulate **Car Settings** or **Recents** opening the app. We do this by launching the Activity without the specific Launcher intent category:
+   ```bash
+   adb shell am start -n com.example.aaosnavapp/.MainActivity
+   ```
 4. **Expected Result:** You will see a perfectly black screen, and the app will manually reconstruct your history, instantly dropping you back into `SecondFragment`.
 
 ---
