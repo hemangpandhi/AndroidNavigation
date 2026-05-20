@@ -17,8 +17,9 @@
         <activity
             android:name=".SplashActivity"
             android:exported="true"
-            android:clearTaskOnLaunch="true"
-            android:theme="@android:style/Theme.NoDisplay">
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
@@ -27,6 +28,7 @@
         
         <activity
             android:name=".MainActivity"
+            android:taskAffinity="${applicationId}.app"
             android:exported="false">
         </activity>
     </application>
