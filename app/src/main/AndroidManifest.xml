@@ -12,7 +12,7 @@
         android:fullBackupContent="@xml/backup_rules"
         android:label="AAOS Nav App"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
+        android:theme="@style/Theme.AAOSNavApp"
         tools:targetApi="31">
         <activity
             android:name=".MainActivity"
