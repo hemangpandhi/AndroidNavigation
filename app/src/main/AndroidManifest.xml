@@ -12,13 +12,12 @@
         android:fullBackupContent="@xml/backup_rules"
         android:label="AAOS Nav App"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AAOSNavApp"
+        android:theme="@style/Theme.AppCompat.Light.DarkActionBar"
         tools:targetApi="31">
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:launchMode="singleTask"
-            android:theme="@style/Theme.AAOSNavApp">
+            android:launchMode="singleTask">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

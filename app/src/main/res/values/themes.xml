@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <style name="Theme.AAOSNavApp" parent="Theme.AppCompat.Light.DarkActionBar">
-        <!-- Disable starting window and snapshots to completely eliminate background flicker -->
-        <item name="android:windowDisablePreview">true</item>
-    </style>
-</resources>
