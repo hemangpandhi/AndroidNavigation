@@ -8,6 +8,10 @@ import androidx.navigation.fragment.NavHostFragment
 class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            setRecentsScreenshotEnabled(false)
+        }
+        
         val isLauncherLaunch = intent?.action == Intent.ACTION_MAIN &&
                 intent.hasCategory(Intent.CATEGORY_LAUNCHER)
         val isFromHistory = ((intent?.flags ?: 0) and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
