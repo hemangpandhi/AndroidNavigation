@@ -18,4 +18,24 @@
         app:layout_constraintTop_toTopOf="parent"
         app:navGraph="@navigation/nav_graph" />
 
+    <!-- 
+      SNAPSHOT FORGERY COVER: 
+      This view perfectly mimics the RootFragment. We show it in onPause() so the OS 
+      takes a snapshot of this instead of SecondFragment. 
+    -->
+    <FrameLayout
+        android:id="@+id/snapshot_cover"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:background="?android:attr/colorBackground"
+        android:visibility="gone"
+        android:elevation="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+        
+        <include layout="@layout/fragment_root" />
+    </FrameLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
