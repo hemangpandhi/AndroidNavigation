@@ -9,59 +9,42 @@ This project demonstrates how to handle a complex, non-standard navigation requi
 
 ---
 
-## Architectural Challenges in AAOS 14
+## The Current Architecture: Cold Start / Manual State Restoration
 
-In a standard Android environment, managing task resets is handled by the framework using Intent flags (`FLAG_ACTIVITY_RESET_TASK_IF_NEEDED`) and Manifest properties (`clearTaskOnLaunch`). 
+We are currently using the **"Nuclear Workaround"** (`onUserLeaveHint` + `finish()` + `SharedPreferences`). 
 
-However, in this specific AAOS environment, the Car Launcher fails to send the proper Intent flags, and aggressively caches component states. This forces the OS to treat every launch as a standard "Hot Start" (bringing the background task to the front). During a Hot Start, the Android 14 `WindowManager` enforces an unskippable zoom-in animation using a historical snapshot of the app's last known state (e.g., `SecondFragment`).
+When the user presses the Home button, we save the Jetpack Navigation state to `SharedPreferences` and explicitly call `finish()`. This completely destroys the OS task and clears the OS WindowManager's visual snapshot. Every launch of the app is therefore a "Cold Start".
 
-Because we cannot fix the Car Launcher directly, we must rely on app-level workarounds. Below are the three primary architectural approaches to solving this, from most standard to most aggressive.
+- If launched from the Launcher, we ignore the saved state and start fresh on `RootFragment`.
+- If launched from Recents, we manually parse the `SharedPreferences` and reconstruct the Jetpack Navigation backstack to restore `SecondFragment`.
 
----
+### Why this aggressive workaround?
+In a standard Android ecosystem, you would use `android:clearTaskOnLaunch="true"` or a Multi-Task router to handle this gracefully. However, your specific AAOS Car Launcher heavily caches the exact ComponentName (`MainActivity`) and ignores standard intent flags (`FLAG_ACTIVITY_RESET_TASK_IF_NEEDED`). Because the Launcher physically forces `MainActivity` to resume on top, the OS enforces an unskippable zoom-in animation using a historical snapshot of the app's last known state (`SecondFragment`).
 
-## Approach 1: The Google-Recommended Standard (Fails on custom AAOS)
-
-If you were building this for standard Android (or an AAOS build that strictly follows Android Intent task management), Google recommends relying on OS-level manifest flags.
-
-### Implementation:
-1. Create an invisible routing Activity (`SplashActivity`).
-2. Put your Fragments in a separate Activity (`ContentActivity`).
-3. Set `android:clearTaskOnLaunch="true"` on the `SplashActivity` in the Manifest.
-
-### Why it fails here:
-The specific AAOS emulator's Car Launcher heavily caches component names and bypasses standard Intent flags. Because the Car Launcher does not send `FLAG_ACTIVITY_RESET_TASK_IF_NEEDED`, the Android Framework ignores `clearTaskOnLaunch`, causing the recommended approach to fail entirely.
+The only mathematical way to eliminate the flicker on this specific build is to ensure the OS never has a snapshot to begin with, which requires destroying the task.
 
 ---
 
-## Approach 2: Snapshot Forgery Cover (Current Implementation)
+## How to Test Both Use-Cases
 
-Since we are forced to use a Single-Activity architecture and cannot rely on standard task clearing, we must "trick" the OS snapshot mechanism.
+The app is now configured to use the Android 12+ Splash Screen API to ensure the Cold Start animation is completely black, hiding the app icon for a seamless transition.
 
-### Implementation:
-1. We place a hidden `FrameLayout` over our UI in `activity_main.xml` that looks exactly like `RootFragment`.
-2. In `MainActivity.onPause()`, right before the OS takes its background screenshot, we make this cover visible.
-3. The OS takes a screenshot of the fake `RootFragment`.
-4. In `MainActivity.onResume()`, we instantly hide the cover.
+### Test 1: Car Launcher (Flicker-Free Reset)
+1. Open the app and navigate to the **Second Fragment**.
+2. Press the **Home** button on your AAOS emulator (this triggers `onUserLeaveHint` and kills the app, saving state).
+3. Tap the **App Icon** in the Car Launcher.
+4. **Expected Result:** You will see a perfectly black screen (Cold Start), which instantly transitions directly into `RootFragment`. There should be absolutely no flicker of `SecondFragment`.
 
-### Pros & Cons:
-- **Pros:** The Car Launcher zoom-in animation perfectly displays `RootFragment`, eliminating the `SecondFragment` flicker. It does not interfere with `onUserLeaveHint` or task lifecycles.
-- **Cons:** Android only has *one* snapshot slot. Because the snapshot is now `RootFragment`, launching the app from **Recents** or **Car Settings** will show a brief flash of `RootFragment` before revealing the actual `SecondFragment` underneath. Furthermore, Android's UI thread does not always guarantee the cover will draw in time before the snapshot is composited.
+### Test 2: Recents / Car Settings (State Preservation)
+1. Open the app and navigate to the **Second Fragment**.
+2. Press the **Home** button.
+3. Open your AAOS **Recents** menu and select the app.
+4. **Expected Result:** You will see a perfectly black screen, and the app will manually reconstruct your history, instantly dropping you back into `SecondFragment`.
 
 ---
 
-## Approach 3: The Multi-Task Router Architecture (The Ultimate Workaround)
+## Rejected Architectures (For Reference)
 
-If Approach 2's Recents flash is unacceptable, or the OS fails to draw the cover in time, this is the final, most robust way to defeat a misbehaving CarLauncher from the inside without killing the task on leave.
-
-### Implementation:
-We split the app into two separate OS Tasks using `android:taskAffinity`.
-1. **`RouterActivity` (Transparent Theme):** The main entry point for the Launcher. Runs in the default task.
-2. **`AppActivity` (Your UI):** Runs in a separate background task (e.g., `taskAffinity=".app"`).
-
-### How it works:
-1. When you tap the Car Launcher, the OS blindly animates the `RouterActivity`. Because it is transparent, there is **no flicker**.
-2. The invisible `RouterActivity` instantly analyzes the intent. If it came from the Launcher, it sends an explicit `Intent.FLAG_ACTIVITY_CLEAR_TASK` command to `AppActivity` and brings it to the front. `AppActivity` restarts cleanly on `RootFragment`.
-3. If launched from Recents or Car Settings, we bypass the clear command and just bring `AppActivity` to the front, preserving `SecondFragment`.
-
-### Conclusion:
-If you cannot fix the Car Launcher code, **Approach 3 (Multi-Task Router)** is the ultimate architectural solution to guarantee perfect transitions on a custom, non-compliant AAOS build.
+1. **The Google-Recommended Standard (`clearTaskOnLaunch`):** Failed because the Car Launcher does not send standard reset flags, causing the framework to ignore the command entirely.
+2. **Snapshot Forgery (`onPause` Cover View):** Failed because Android's UI thread does not guarantee the fake cover will draw in time before the OS takes the background screenshot.
+3. **Multi-Task Router (Separate `taskAffinity`):** Failed because the Car Launcher has hardcoded the `.MainActivity` component in its cache, completely bypassing the invisible Router Activity.
