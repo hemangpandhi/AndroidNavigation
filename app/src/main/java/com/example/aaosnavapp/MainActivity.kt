@@ -1,34 +1,47 @@
 package com.example.aaosnavapp
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.navigation.fragment.NavHostFragment
 
 class MainActivity : AppCompatActivity() {
 
-    private val REQUEST_CODE_CONTENT = 1001
-
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        startContentActivity()
+        val isLauncherLaunch = intent?.action == Intent.ACTION_MAIN &&
+                intent.hasCategory(Intent.CATEGORY_LAUNCHER)
+        val isFromHistory = ((intent?.flags ?: 0) and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
+
+        val stateToRestore = if (isLauncherLaunch && !isFromHistory) null else savedInstanceState
+
+        super.onCreate(stateToRestore)
+        setContentView(R.layout.activity_main)
     }
 
-    override fun onRestart() {
-        super.onRestart()
-        // clearTaskOnLaunch will have destroyed ContentActivity.
-        // We restart it fresh here.
-        startContentActivity()
-    }
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        
+        val isLauncherLaunch = intent?.action == Intent.ACTION_MAIN &&
+                intent.hasCategory(Intent.CATEGORY_LAUNCHER)
+        val isFromHistory = ((intent?.flags ?: 0) and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) != 0
 
-    private fun startContentActivity() {
-        val intent = android.content.Intent(this, ContentActivity::class.java)
-        startActivityForResult(intent, REQUEST_CODE_CONTENT)
-        overridePendingTransition(0, 0)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: android.content.Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_CODE_CONTENT) {
-            finish()
+        if (isLauncherLaunch && !isFromHistory) {
+            val navHostFragment = supportFragmentManager
+                .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+            val navController = navHostFragment.navController
+            
+            val startDestinationId = navController.graph.startDestinationId
+            val options = androidx.navigation.NavOptions.Builder()
+                .setPopUpTo(startDestinationId, true)
+                .setEnterAnim(0)
+                .setExitAnim(0)
+                .setPopEnterAnim(0)
+                .setPopExitAnim(0)
+                .build()
+                
+            navController.navigate(startDestinationId, null, options)
+            supportFragmentManager.executePendingTransactions()
         }
     }
 }
